@@ -1,0 +1,46 @@
+@import "swiper/css";
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: light;
+  --font-body: "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+  --font-heading: Georgia, "Times New Roman", serif;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  @apply bg-background text-foreground antialiased;
+  background-image:
+    radial-gradient(circle at top left, rgba(212, 175, 55, 0.18), transparent 25%),
+    radial-gradient(circle at top right, rgba(11, 77, 58, 0.1), transparent 30%),
+    linear-gradient(180deg, #fffdf8 0%, #fffaf2 100%);
+}
+
+* {
+  @apply border-border;
+}
+
+.glass-panel {
+  @apply border border-white/60 bg-white/75 shadow-panel backdrop-blur-xl;
+}
+
+.section-title {
+  @apply font-serif text-3xl text-primary md:text-5xl;
+}
+
+.section-copy {
+  @apply max-w-2xl text-sm leading-7 text-slate-600 md:text-base;
+}
+
+.grid-lines {
+  background-image:
+    linear-gradient(rgba(11, 77, 58, 0.05) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(11, 77, 58, 0.05) 1px, transparent 1px);
+  background-size: 50px 50px;
+}
