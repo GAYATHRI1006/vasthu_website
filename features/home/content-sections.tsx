@@ -1,4 +1,5 @@
-import { CheckCircle2, Flower2, Home, Sparkles, Star, SunMedium } from "lucide-react";
+import Image from "next/image";
+import { CheckCircle2, Home, Sparkles, Star, SunMedium } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 
 const benefits = [
@@ -84,11 +85,17 @@ export function ContentSections() {
         <div className="container">
           <Card className="overflow-hidden border-primary/10 bg-gradient-to-br from-white via-[#fffaf0] to-[#f2f7f4]">
             <CardContent className="grid gap-8 lg:grid-cols-[0.7fr_1.3fr]">
-              <div className="rounded-[28px] bg-gradient-to-br from-primary to-[#116248] p-8 text-white">
-                <div className="flex h-20 w-20 items-center justify-center rounded-full bg-white/10">
-                  <Flower2 className="h-10 w-10" />
+              <div className="rounded-[28px] bg-gradient-to-br from-primary to-[#116248] p-5 text-white">
+                <div className="relative aspect-[4/5] overflow-hidden rounded-[24px] border border-white/10 bg-white/10">
+                  <Image
+                    src="/images/gallery/trainer.png"
+                    alt="HariOm Vastu trainer"
+                    fill
+                    className="object-cover"
+                    sizes="(max-width: 1024px) 100vw, 32vw"
+                  />
                 </div>
-                <p className="mt-8 text-sm uppercase tracking-[0.28em] text-secondary/90">Lead Trainer</p>
+                <p className="mt-6 text-sm uppercase tracking-[0.28em] text-secondary/90">Lead Trainer</p>
                 <h3 className="mt-3 font-serif text-4xl">HariOm Vastu Mentor</h3>
                 <p className="mt-4 text-sm leading-7 text-emerald-50/90">
                   Experienced in translating classical Vastu frameworks into practical recommendations for families,

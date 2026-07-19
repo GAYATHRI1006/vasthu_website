@@ -2,6 +2,7 @@ import { NextRequest } from "next/server";
 import { getBookingById } from "@/lib/data";
 import { formatCurrency, formatEventDate } from "@/lib/utils";
 import { jsonError } from "@/lib/http";
+import { generateReceiptPdf } from "@/lib/receipt-pdf";
 
 export async function GET(
   _request: NextRequest,
@@ -14,24 +15,24 @@ export async function GET(
     return jsonError("Receipt not found.", 404);
   }
 
-  const receipt = [
-    "HariOm Vastu Solutions",
-    "Payment Receipt",
-    `Booking ID: ${booking.bookingId}`,
-    `Customer Name: ${booking.customerName}`,
-    `Phone: ${booking.phone}`,
-    `Program: ${booking.program}`,
-    `Date: ${formatEventDate(booking.eventDate)}`,
-    `Venue: ${booking.venue}`,
-    `Amount Paid: ${formatCurrency(booking.amountPaid)}`,
-    `Payment ID: ${booking.paymentId}`,
-    `Status: ${booking.bookingStatus}`
-  ].join("\n");
+  const pdf = generateReceiptPdf({
+    booking: {
+      ...booking,
+      eventDate: formatEventDate(booking.eventDate),
+      amountPaid: booking.amountPaid
+    },
+    generatedAt: new Intl.DateTimeFormat("en-IN", {
+      dateStyle: "medium",
+      timeStyle: "short"
+    }).format(new Date())
+  });
 
-  return new Response(receipt, {
+  return new Response(pdf, {
     headers: {
-      "Content-Type": "text/plain; charset=utf-8",
-      "Content-Disposition": `attachment; filename="receipt-${bookingId}.txt"`
+      "Content-Type": "application/pdf",
+      "Content-Disposition": `attachment; filename="receipt-${bookingId}.pdf"`,
+      "Content-Length": String(pdf.byteLength),
+      "Cache-Control": "no-store"
     }
   });
 }

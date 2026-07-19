@@ -28,17 +28,35 @@ export async function getUpcomingClass(): Promise<VastuClass> {
 }
 
 export async function getGalleryImages(): Promise<GalleryImage[]> {
-  const galleryDir = path.join(process.cwd(), "public", "images", "gallery");
-  const files = await fs.readdir(galleryDir).catch(() => []);
+  const imageRoot = path.join(process.cwd(), "public", "images");
+  const galleryDir = path.join(imageRoot, "gallery");
+  const [rootFiles, galleryFiles] = await Promise.all([
+    fs.readdir(imageRoot).catch(() => []),
+    fs.readdir(galleryDir).catch(() => [])
+  ]);
 
-  return files
-    .filter((file) => /\.(png|jpe?g|webp|avif)$/i.test(file))
-    .sort((a, b) => a.localeCompare(b))
-    .map((file, index) => ({
-      id: `${index}-${file}`,
-      src: `/images/gallery/${file}`,
-      alt: `HariOm Vastu workshop gallery image ${index + 1}`
-    }));
+  const imageFiles = [
+    ...rootFiles
+      .filter((file) => /\.(png|jpe?g|webp|avif)$/i.test(file))
+      .filter((file) => !/^trainer\./i.test(file))
+      .map((file) => ({
+        file,
+        src: `/images/${file}`
+      })),
+    ...galleryFiles
+      .filter((file) => /\.(png|jpe?g|webp|avif)$/i.test(file))
+      .filter((file) => !/^trainer\./i.test(file))
+      .map((file) => ({
+        file,
+        src: `/images/gallery/${file}`
+      }))
+  ].sort((a, b) => a.file.localeCompare(b.file));
+
+  return imageFiles.map(({ file, src }, index) => ({
+    id: `${index}-${file}`,
+    src,
+    alt: `HariOm Vastu workshop gallery image ${index + 1}`
+  }));
 }
 
 export async function createDraftRegistration(payload: RegistrationPayload) {
