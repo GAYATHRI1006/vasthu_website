@@ -9,6 +9,8 @@ import { generateBookingId } from "@/lib/utils";
 const inMemoryCustomers = new Map<string, any>();
 const inMemoryPayments: any[] = [];
 
+const DUPLICATE_PAID_CUSTOMER_ERROR = "CUSTOMER_ALREADY_CONFIRMED_FOR_CLASS";
+
 export async function getUpcomingClass(): Promise<VastuClass> {
   const supabase = getSupabaseAdmin();
 
@@ -65,6 +67,57 @@ export async function createDraftRegistration(payload: RegistrationPayload) {
   const bookingId = generateBookingId();
 
   if (supabase) {
+    const { data: existingRows, error: existingError } = await supabase
+      .from("customers")
+      .select("id, booking_id, payment_status")
+      .eq("class_id", payload.classId)
+      .eq("phone", payload.phone)
+      .order("created_at", { ascending: false });
+
+    if (existingError) {
+      throw new Error(existingError.message);
+    }
+
+    const paidRow = existingRows?.find(
+      (row) => row.payment_status === "paid"
+    );
+
+    if (paidRow) {
+      throw new Error(
+        `${DUPLICATE_PAID_CUSTOMER_ERROR}:${paidRow.booking_id as string}`
+      );
+    }
+
+    const pendingRow = existingRows?.find(
+      (row) => row.payment_status !== "paid"
+    );
+
+    if (pendingRow) {
+      const { data, error } = await supabase
+        .from("customers")
+        .update({
+          name: payload.fullName,
+          email: payload.email || null,
+          place: payload.place,
+          occupation: payload.occupation || null,
+          interested_class: payload.interestedClass,
+          amount_paid: eventClass.fee
+        })
+        .eq("id", pendingRow.id as string)
+        .select("id, booking_id")
+        .single();
+
+      if (error) {
+        throw new Error(error.message);
+      }
+
+      return {
+        id: data.id as string,
+        bookingId: data.booking_id as string,
+        amount: eventClass.fee
+      };
+    }
+
     const { data, error } = await supabase
       .from("customers")
       .insert({
@@ -90,6 +143,40 @@ export async function createDraftRegistration(payload: RegistrationPayload) {
     return {
       id: data.id as string,
       bookingId: data.booking_id as string,
+      amount: eventClass.fee
+    };
+  }
+
+  const existingRecords = Array.from(inMemoryCustomers.values()).filter(
+    (customer) =>
+      customer.class_id === payload.classId && customer.phone === payload.phone
+  );
+
+  const paidRecord = existingRecords.find(
+    (customer) => customer.payment_status === "paid"
+  );
+
+  if (paidRecord) {
+    throw new Error(
+      `${DUPLICATE_PAID_CUSTOMER_ERROR}:${paidRecord.booking_id as string}`
+    );
+  }
+
+  const pendingRecord = existingRecords.find(
+    (customer) => customer.payment_status !== "paid"
+  );
+
+  if (pendingRecord) {
+    pendingRecord.name = payload.fullName;
+    pendingRecord.email = payload.email || null;
+    pendingRecord.place = payload.place;
+    pendingRecord.occupation = payload.occupation || null;
+    pendingRecord.interested_class = payload.interestedClass;
+    pendingRecord.amount_paid = eventClass.fee;
+
+    return {
+      id: pendingRecord.id,
+      bookingId: pendingRecord.booking_id,
       amount: eventClass.fee
     };
   }
@@ -172,6 +259,79 @@ export async function assignOrderToCustomer(customerId: string, orderId: string)
   if (record) {
     record.order_id = orderId;
   }
+}
+
+export async function getBookingContextByOrderId(orderId: string): Promise<{
+  customerId: string;
+  classId: string;
+  bookingId: string;
+  phone: string;
+} | null> {
+  const supabase = getSupabaseAdmin();
+
+  if (supabase) {
+    const { data } = await supabase
+      .from("customers")
+      .select("id, class_id, booking_id, phone")
+      .eq("order_id", orderId)
+      .maybeSingle();
+
+    if (!data) {
+      return null;
+    }
+
+    return {
+      customerId: data.id as string,
+      classId: data.class_id as string,
+      bookingId: data.booking_id as string,
+      phone: data.phone as string
+    };
+  }
+
+  const record = Array.from(inMemoryCustomers.values()).find(
+    (customer) => customer.order_id === orderId
+  );
+
+  if (!record) {
+    return null;
+  }
+
+  return {
+    customerId: record.id,
+    classId: record.class_id,
+    bookingId: record.booking_id,
+    phone: record.phone
+  };
+}
+
+export async function getConfirmedBookingByPhoneAndClass(input: {
+  phone: string;
+  classId: string;
+}): Promise<string | null> {
+  const supabase = getSupabaseAdmin();
+
+  if (supabase) {
+    const { data } = await supabase
+      .from("customers")
+      .select("booking_id")
+      .eq("class_id", input.classId)
+      .eq("phone", input.phone)
+      .eq("payment_status", "paid")
+      .order("updated_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    return (data?.booking_id as string | undefined) ?? null;
+  }
+
+  const record = Array.from(inMemoryCustomers.values()).find(
+    (customer) =>
+      customer.class_id === input.classId &&
+      customer.phone === input.phone &&
+      customer.payment_status === "paid"
+  );
+
+  return record?.booking_id ?? null;
 }
 
 export async function confirmBooking(input: {

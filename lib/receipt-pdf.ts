@@ -113,7 +113,7 @@ export function generateReceiptPdf(input: {
     { x: 36, y: 342, width: 250, height: 150, fill: [255, 255, 255], stroke: [209, 213, 219], lineWidth: 1 },
     { x: 309, y: 342, width: 250, height: 150, fill: [255, 255, 255], stroke: [209, 213, 219], lineWidth: 1 },
     { x: 36, y: 168, width: 523, height: 146, fill: [248, 250, 252], stroke: [209, 213, 219], lineWidth: 1 },
-    { x: 420, y: 220, width: 110, height: 42, fill: [232, 245, 233], stroke: [134, 239, 172], lineWidth: 1 }
+    { x: 420, y: 238, width: 56, height: 20, fill: [232, 245, 233], stroke: [134, 239, 172], lineWidth: 1 }
   ];
 
   const lines: PdfLine[] = [
@@ -141,11 +141,10 @@ export function generateReceiptPdf(input: {
     { text: `Payment ID: ${booking.paymentId}`, x: 327, y: 376, size: 11 },
 
     { text: "Payment Breakdown", x: 54, y: 284, size: 14, font: "F2", color: [15, 23, 42] },
-    { text: "Registration Fee", x: 54, y: 248, size: 12 },
-    { text: booking.amountPaid.toLocaleString("en-IN", { style: "currency", currency: "INR" }), x: 450, y: 248, size: 12, font: "F2" },
-    { text: "Total Paid", x: 54, y: 218, size: 13, font: "F2" },
-    { text: booking.amountPaid.toLocaleString("en-IN", { style: "currency", currency: "INR" }), x: 438, y: 218, size: 16, font: "F2", color: [11, 77, 58] },
-    { text: "PAID", x: 456, y: 236, size: 13, font: "F2", color: [21, 128, 61] },
+    { text: "Registration Fee", x: 54, y: 252, size: 12 },
+    { text: "PAID", x: 430, y: 251, size: 11, font: "F2", color: [21, 128, 61] },
+    { text: "Total Paid", x: 54, y: 212, size: 13, font: "F2" },
+    { text: booking.amountPaid.toLocaleString("en-IN", { style: "currency", currency: "INR" }), x: 420, y: 212, size: 14, font: "F2", color: [11, 77, 58] },
 
     { text: "Notes", x: 36, y: 118, size: 10, font: "F2", color: [100, 116, 139] },
     { text: "This receipt confirms successful payment for the registered event.", x: 36, y: 100, size: 10, color: [100, 116, 139] },

@@ -26,13 +26,28 @@ export async function POST(request: NextRequest) {
     return jsonError("Registration is closed for this batch.", 409);
   }
 
-  const registration = await createDraftRegistration(parsed.data);
+  try {
+    const registration = await createDraftRegistration(parsed.data);
 
-  return NextResponse.json({
-    data: {
-      customerId: registration.id,
-      bookingId: registration.bookingId,
-      amount: registration.amount
+    return NextResponse.json({
+      data: {
+        customerId: registration.id,
+        bookingId: registration.bookingId,
+        amount: registration.amount
+      }
+    });
+  } catch (error) {
+    if (
+      error instanceof Error &&
+      error.message.startsWith("CUSTOMER_ALREADY_CONFIRMED_FOR_CLASS:")
+    ) {
+      const [, existingBookingId] = error.message.split(":");
+      return jsonError(
+        `This phone number is already confirmed for this batch. Existing booking: ${existingBookingId}`,
+        409
+      );
     }
-  });
+
+    throw error;
+  }
 }

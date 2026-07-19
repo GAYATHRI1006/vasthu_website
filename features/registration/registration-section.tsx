@@ -94,6 +94,10 @@ export function RegistrationSection({ eventClass }: { eventClass: VastuClass }) 
           name: "HariOm Vastu Solutions",
           description: eventClass.title,
           order_id: order.orderId,
+          callback_url: `${window.location.origin}/api/payments/callback?bookingId=${encodeURIComponent(
+            draft.bookingId
+          )}`,
+          redirect: true,
           prefill: {
             name: draft.values.fullName,
             email: draft.values.email,
@@ -104,30 +108,6 @@ export function RegistrationSection({ eventClass }: { eventClass: VastuClass }) 
           },
           theme: {
             color: "#0B4D3A"
-          },
-          handler: async (response: {
-            razorpay_order_id: string;
-            razorpay_payment_id: string;
-            razorpay_signature: string;
-          }) => {
-            try {
-              const verified = await verifyPayment({
-                customerId: draft.customerId,
-                classId: eventClass.id,
-                bookingId: draft.bookingId,
-                razorpay_order_id: response.razorpay_order_id,
-                razorpay_payment_id: response.razorpay_payment_id,
-                razorpay_signature: response.razorpay_signature
-              });
-
-              router.push(`/success?bookingId=${verified.bookingId}`);
-            } catch (error) {
-              toast.error(error instanceof Error ? error.message : "Verification failed.");
-              router.push("/failed");
-            }
-          },
-          modal: {
-            ondismiss: () => router.push("/failed")
           }
         });
 

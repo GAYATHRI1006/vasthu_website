@@ -22,6 +22,8 @@ function SuccessContent() {
   const searchParams = useSearchParams();
   const bookingId = searchParams.get("bookingId");
   const [booking, setBooking] = useState<BookingRecord | null>(null);
+  const [mounted, setMounted] = useState(false);
+  const [confettiSize, setConfettiSize] = useState<{ width: number; height: number } | null>(null);
 
   useEffect(() => {
     if (!bookingId) {
@@ -31,13 +33,38 @@ function SuccessContent() {
     fetchBooking(bookingId).then(setBooking).catch(() => null);
   }, [bookingId]);
 
+  useEffect(() => {
+    setMounted(true);
+
+    function updateConfettiSize() {
+      setConfettiSize({
+        width: window.innerWidth,
+        height: window.innerHeight
+      });
+    }
+
+    updateConfettiSize();
+    window.addEventListener("resize", updateConfettiSize);
+
+    return () => {
+      window.removeEventListener("resize", updateConfettiSize);
+    };
+  }, []);
+
   if (!bookingId) {
     return <StateCard title="Missing booking reference." />;
   }
 
   return (
     <main className="relative min-h-screen overflow-hidden bg-background py-16">
-      <Confetti recycle={false} numberOfPieces={240} />
+      {mounted && confettiSize ? (
+        <Confetti
+          recycle={false}
+          numberOfPieces={240}
+          width={confettiSize.width}
+          height={confettiSize.height}
+        />
+      ) : null}
       <div className="container">
         <Card className="mx-auto max-w-3xl border-primary/10">
           <CardContent className="space-y-8">
