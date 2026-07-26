@@ -1,18 +1,31 @@
 "use client";
 
-import { useState } from "react";
+import { Suspense, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Eye, EyeOff, Leaf } from "lucide-react";
 
 export default function AdminLoginPage() {
-  const router = useRouter();
+  return (
+    <Suspense fallback={<AdminLoginShell accessDenied={false} />}>
+      <AdminLoginContent />
+    </Suspense>
+  );
+}
+
+function AdminLoginContent() {
   const searchParams = useSearchParams();
+  const accessDenied = searchParams.get("denied") === "1";
+
+  return <AdminLoginShell accessDenied={accessDenied} />;
+}
+
+function AdminLoginShell({ accessDenied }: { accessDenied: boolean }) {
+  const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
-  const accessDenied = searchParams.get("denied") === "1";
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
