@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 export function Navbar() {
   return (
     <header className="sticky top-0 z-40 border-b border-white/70 bg-background/80 backdrop-blur-xl">
-      <div className="container flex h-20 items-center justify-between">
+      <div className="container flex h-20 items-center justify-between gap-4">
         <Link href="/" className="flex items-center gap-3">
           <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-primary text-sm font-semibold text-white shadow-soft">
             HV
@@ -24,9 +24,16 @@ export function Navbar() {
           <a href="#gallery">Gallery</a>
           <a href="#register">Register</a>
         </nav>
-        <Button asChild className="hidden md:inline-flex">
-          <a href="#register">Reserve Your Seat</a>
-        </Button>
+        <div className="flex items-center gap-4">
+          <Button asChild variant="outline" className="hidden md:inline-flex">
+            <Link href="/admin/login" prefetch>
+              Admin Login
+            </Link>
+          </Button>
+          <Button asChild className="hidden md:inline-flex">
+            <a href="#register">Reserve Your Seat</a>
+          </Button>
+        </div>
       </div>
     </header>
   );

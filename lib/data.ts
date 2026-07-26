@@ -18,15 +18,27 @@ export async function getUpcomingClass(): Promise<VastuClass> {
     return fallbackClass;
   }
 
-  const { data } = await supabase
+  const nowIso = new Date().toISOString();
+  const { data: upcomingData } = await supabase
     .from("classes")
     .select("*")
-    .eq("registration_open", true)
+    .gte("event_date", nowIso)
     .order("event_date", { ascending: true })
     .limit(1)
     .maybeSingle();
 
-  return (data as VastuClass | null) ?? fallbackClass;
+  if (upcomingData) {
+    return upcomingData as VastuClass;
+  }
+
+  const { data: latestData } = await supabase
+    .from("classes")
+    .select("*")
+    .order("event_date", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  return (latestData as VastuClass | null) ?? fallbackClass;
 }
 
 export async function getGalleryImages(): Promise<GalleryImage[]> {
@@ -78,9 +90,7 @@ export async function createDraftRegistration(payload: RegistrationPayload) {
       throw new Error(existingError.message);
     }
 
-    const paidRow = existingRows?.find(
-      (row) => row.payment_status === "paid"
-    );
+    const paidRow = existingRows?.find((row) => row.payment_status === "paid");
 
     if (paidRow) {
       throw new Error(
@@ -88,9 +98,7 @@ export async function createDraftRegistration(payload: RegistrationPayload) {
       );
     }
 
-    const pendingRow = existingRows?.find(
-      (row) => row.payment_status !== "paid"
-    );
+    const pendingRow = existingRows?.find((row) => row.payment_status !== "paid");
 
     if (pendingRow) {
       const { data, error } = await supabase
@@ -439,4 +447,161 @@ export async function getBookingById(
     paymentStatus: record.payment_status,
     bookingStatus: record.booking_status
   };
+}
+
+export type AdminCustomer = {
+  id: string;
+  bookingId: string;
+  name: string;
+  phone: string;
+  email: string | null;
+  place: string;
+  occupation: string | null;
+  interestedClass: string | null;
+  amountPaid: number;
+  paymentStatus: string;
+  bookingStatus: string;
+  paymentId: string | null;
+  orderId: string | null;
+  program: string;
+  venue: string;
+  eventDate: string;
+  createdAt: string;
+};
+
+export type AdminPaymentLog = {
+  id: string;
+  customerName: string;
+  phone: string;
+  orderId: string;
+  paymentId: string | null;
+  amount: number;
+  status: string;
+  createdAt: string;
+};
+
+export async function getAllCustomers(): Promise<AdminCustomer[]> {
+  const supabase = getSupabaseAdmin();
+  if (!supabase) return [];
+
+  const { data, error } = await supabase
+    .from("customers")
+    .select(
+      "id, booking_id, name, phone, email, place, occupation, interested_class, amount_paid, payment_status, booking_status, payment_id, order_id, created_at, classes(title, venue, event_date)"
+    )
+    .order("created_at", { ascending: false });
+
+  if (error || !data) return [];
+
+  return data.map((row: any) => {
+    const cls = Array.isArray(row.classes) ? row.classes[0] : row.classes;
+    return {
+      id: row.id,
+      bookingId: row.booking_id,
+      name: row.name,
+      phone: row.phone,
+      email: row.email,
+      place: row.place,
+      occupation: row.occupation,
+      interestedClass: row.interested_class,
+      amountPaid: row.amount_paid,
+      paymentStatus: row.payment_status,
+      bookingStatus: row.booking_status,
+      paymentId: row.payment_id,
+      orderId: row.order_id,
+      program: cls?.title ?? fallbackClass.title,
+      venue: cls?.venue ?? fallbackClass.venue,
+      eventDate: cls?.event_date ?? fallbackClass.event_date,
+      createdAt: row.created_at
+    };
+  });
+}
+
+export async function getPaymentLogs(): Promise<AdminPaymentLog[]> {
+  const supabase = getSupabaseAdmin();
+  if (!supabase) return [];
+
+  const { data, error } = await supabase
+    .from("payment_logs")
+    .select("id, order_id, payment_id, amount, status, created_at, customers(name, phone)")
+    .order("created_at", { ascending: false });
+
+  if (error || !data) return [];
+
+  return data.map((row: any) => {
+    const customer = Array.isArray(row.customers) ? row.customers[0] : row.customers;
+    return {
+      id: row.id,
+      customerName: customer?.name ?? "Unknown",
+      phone: customer?.phone ?? "--",
+      orderId: row.order_id,
+      paymentId: row.payment_id,
+      amount: row.amount,
+      status: row.status,
+      createdAt: row.created_at
+    };
+  });
+}
+
+export async function updateClassById(
+  classId: string,
+  fields: Partial<{
+    title: string;
+    subtitle: string;
+    description: string;
+    event_date: string;
+    event_time: string;
+    venue: string;
+    address: string;
+    fee: number;
+    total_seats: number;
+    registration_open: boolean;
+  }>
+): Promise<VastuClass> {
+  const supabase = getSupabaseAdmin();
+  if (!supabase) throw new Error("Supabase not configured");
+
+  const { data: currentClass, error: currentClassError } = await supabase
+    .from("classes")
+    .select("*")
+    .eq("id", classId)
+    .maybeSingle();
+
+  if (currentClassError) {
+    throw new Error(currentClassError.message);
+  }
+
+  if (!currentClass) {
+    throw new Error("Class not found");
+  }
+
+  const updatePayload = Object.fromEntries(
+    Object.entries(fields).filter(([, value]) => value !== undefined)
+  ) as typeof fields & Partial<Pick<VastuClass, "available_seats">>;
+
+  if (
+    typeof updatePayload.total_seats === "number" &&
+    Number.isFinite(updatePayload.total_seats)
+  ) {
+    const soldSeats = currentClass.total_seats - currentClass.available_seats;
+
+    if (updatePayload.total_seats < soldSeats) {
+      throw new Error(
+        `Total seats cannot be less than sold seats (${soldSeats}).`
+      );
+    }
+
+    updatePayload.available_seats = updatePayload.total_seats - soldSeats;
+  }
+
+  const { data, error } = await supabase
+    .from("classes")
+    .update(updatePayload)
+    .eq("id", classId)
+    .select("*")
+    .single();
+
+  if (error) throw new Error(error.message);
+
+  return data as VastuClass;
 }

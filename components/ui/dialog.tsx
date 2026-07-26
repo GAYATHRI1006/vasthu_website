@@ -23,7 +23,7 @@ function DialogContent({
         {...props}
       >
         {children}
-        <DialogClose className="absolute right-4 top-4 rounded-full p-2 text-slate-500 transition hover:bg-slate-100">
+        <DialogClose className="absolute right-4 top-4 z-10 rounded-full bg-white/90 p-2 text-slate-500 transition hover:bg-slate-100">
           <X className="h-4 w-4" />
           <span className="sr-only">Close</span>
         </DialogClose>

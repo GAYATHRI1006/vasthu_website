@@ -1,13 +1,14 @@
 "use client";
 
 import { Suspense, useEffect, useState } from "react";
-import Link from "next/link";
-import { useSearchParams } from "next/navigation";
 import Confetti from "react-confetti";
+import { useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { fetchBooking } from "@/services/api";
+import { SuccessHomeButton } from "@/features/success/success-home-button";
+import { setConfirmedBookingId } from "@/lib/confirmed-booking";
 import { formatCurrency, formatEventDate } from "@/lib/utils";
+import { fetchBooking } from "@/services/api";
 import type { BookingRecord } from "@/types";
 
 export default function SuccessPage() {
@@ -23,13 +24,17 @@ function SuccessContent() {
   const bookingId = searchParams.get("bookingId");
   const [booking, setBooking] = useState<BookingRecord | null>(null);
   const [mounted, setMounted] = useState(false);
-  const [confettiSize, setConfettiSize] = useState<{ width: number; height: number } | null>(null);
+  const [confettiSize, setConfettiSize] = useState<{
+    width: number;
+    height: number;
+  } | null>(null);
 
   useEffect(() => {
     if (!bookingId) {
       return;
     }
 
+    setConfirmedBookingId(bookingId);
     fetchBooking(bookingId).then(setBooking).catch(() => null);
   }, [bookingId]);
 
@@ -69,8 +74,12 @@ function SuccessContent() {
         <Card className="mx-auto max-w-3xl border-primary/10">
           <CardContent className="space-y-8">
             <div className="space-y-3 text-center">
-              <p className="text-sm uppercase tracking-[0.3em] text-secondary">Payment Successful</p>
-              <h1 className="font-serif text-5xl text-primary">Booking Confirmed</h1>
+              <p className="text-sm uppercase tracking-[0.3em] text-secondary">
+                Payment Successful
+              </p>
+              <h1 className="font-serif text-5xl text-primary">
+                Booking Confirmed
+              </h1>
               <p className="text-sm leading-7 text-slate-600">
                 Your seat is reserved. Receipt download is available below.
               </p>
@@ -84,20 +93,23 @@ function SuccessContent() {
                 <Detail label="Program" value={booking.program} />
                 <Detail label="Date" value={formatEventDate(booking.eventDate)} />
                 <Detail label="Venue" value={booking.venue} />
-                <Detail label="Amount Paid" value={formatCurrency(booking.amountPaid)} />
+                <Detail
+                  label="Amount Paid"
+                  value={formatCurrency(booking.amountPaid)}
+                />
                 <Detail label="Payment ID" value={booking.paymentId} />
               </div>
             ) : (
-              <p className="text-center text-sm text-slate-500">Loading booking details...</p>
+              <p className="text-center text-sm text-slate-500">
+                Loading booking details...
+              </p>
             )}
 
             <div className="flex flex-col justify-center gap-3 sm:flex-row">
               <Button asChild variant="secondary">
                 <a href={`/api/receipt/${bookingId}`}>Download Receipt</a>
               </Button>
-              <Button asChild variant="outline">
-                <Link href="/">Back to Home</Link>
-              </Button>
+              <SuccessHomeButton />
             </div>
           </CardContent>
         </Card>

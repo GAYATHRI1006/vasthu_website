@@ -197,6 +197,7 @@ export function RegistrationSection({ eventClass }: { eventClass: VastuClass }) 
                   variant="secondary"
                   onClick={openCheckout}
                   disabled={!draft || isPending}
+                  className="w-auto self-start px-6 text-base tracking-normal"
                 >
                   {isPending ? <LoaderCircle className="mr-2 h-4 w-4 animate-spin" /> : null}
                   Pay Securely
